@@ -10,14 +10,16 @@
     <div class="d-flex align-items-center gap-2 fs-4 fw-bold"><span class="brand-mark"><i class="bi bi-ticket-perforated-fill"></i></span>E-Ticket</div>
     <div><div class="admit">Admit one · Admin or Attendee</div><h1>Reserve. Confirm. Walk in with your QR.</h1>
       <ul class="mt-4"><li><i class="bi bi-check2-circle me-2"></i>Browse events and see live ticket availability</li>
-      <li><i class="bi bi-check2-circle me-2"></i>Reserve for a group, with one e-ticket per attendee</li>
+      <li><i class="bi bi-check2-circle me-2"></i>One e-ticket per account for each event, with its own QR code</li>
       <li><i class="bi bi-check2-circle me-2"></i>Administrators confirm reservations and validate tickets at the door</li></ul></div>
     <div><div class="barcode light mb-2" aria-hidden="true"></div><div class="small text-white-50">WMA4 – Advanced Web Development · College of Computer Studies, Tarlac State University</div></div>
   </section>
   <section class="auth-card"><div class="inner">
-    <ul class="nav nav-pills mb-4" role="tablist">
+    <ul class="nav nav-pills nav-fill flex-nowrap auth-tabs mb-4" role="tablist">
       <li class="nav-item"><button class="nav-link active" data-bs-toggle="pill" data-bs-target="#loginPane" type="button" role="tab">Log in</button></li>
-      <li class="nav-item"><button class="nav-link" data-bs-toggle="pill" data-bs-target="#registerPane" type="button" role="tab">Create attendee account</button></li>
+      <li class="nav-item"><button class="nav-link" data-bs-toggle="pill" data-bs-target="#registerPane" type="button" role="tab" title="Create an attendee account">Sign up</button></li>
+      <li class="nav-item"><button class="nav-link" data-bs-toggle="pill" data-bs-target="#resetPane" type="button" role="tab">Reset password</button></li>
+      <li class="d-none"><button id="forgotTab" data-bs-toggle="pill" data-bs-target="#forgotPane" type="button" tabindex="-1"></button></li>
     </ul>
     <div id="msg" class="alert alert-danger d-none" role="alert"></div>
     <div class="tab-content">
@@ -28,8 +30,7 @@
           <div class="mb-3"><label class="form-label" for="lPass">Password</label><input class="form-control" id="lPass" type="password" autocomplete="current-password" required></div>
           <button class="btn btn-brand w-100 py-2">Log in</button>
         </form>
-        <div class="demo-box mt-4"><strong>Demo accounts</strong><br>Administrator: admin@eticket.test / admin123<br>Attendee: attendee@eticket.test / attendee123
-          <div class="mt-2 d-flex gap-2"><button class="btn btn-sm btn-outline-primary" data-fill="admin">Use admin</button><button class="btn btn-sm btn-outline-primary" data-fill="attendee">Use attendee</button></div></div>
+        <div class="text-center mt-2"><button type="button" class="btn btn-link btn-sm" id="forgotLink" data-go="#forgotPane">Forgot password?</button></div>
       </div>
       <div class="tab-pane fade" id="registerPane" role="tabpanel">
         <h2 class="h4 mb-1">Join as an attendee</h2>
@@ -41,6 +42,29 @@
           <button class="btn btn-brand w-100 py-2">Create account</button>
         </form>
       </div>
+      <div class="tab-pane fade" id="resetPane" role="tabpanel">
+        <h2 class="h4 mb-1">Reset your password</h2>
+        <p class="text-muted-2 small">Enter your current password, then choose a new one.</p>
+        <form id="resetForm" novalidate>
+          <div class="mb-3"><label class="form-label" for="xEmail">Email</label><input class="form-control" id="xEmail" type="email" autocomplete="username" required></div>
+          <div class="mb-3"><label class="form-label" for="xOld">Old password</label><input class="form-control" id="xOld" type="password" autocomplete="current-password" required></div>
+          <div class="mb-3"><label class="form-label" for="xPass">New password</label><input class="form-control" id="xPass" type="password" minlength="6" autocomplete="new-password" required><div class="form-text">At least 6 characters.</div></div>
+          <button class="btn btn-brand w-100 py-2">Change password</button>
+        </form>
+        <div class="text-center mt-2"><button type="button" class="btn btn-link btn-sm" data-go="#forgotPane">Forgot password?</button></div>
+      </div>
+      <div class="tab-pane fade" id="forgotPane" role="tabpanel">
+        <h2 class="h4 mb-1">Forgot your password?</h2>
+        <p class="text-muted-2 small">Ask an Administrator for a reset code (Users page → Reset code). It works once and expires after a short time.</p>
+        <form id="forgotForm" novalidate>
+          <div class="mb-3"><label class="form-label" for="fEmail">Email</label><input class="form-control" id="fEmail" type="email" autocomplete="username" required></div>
+          <div class="mb-3"><label class="form-label" for="fCode">Reset code</label><input class="form-control font-monospace text-uppercase" id="fCode" autocomplete="one-time-code" spellcheck="false" required></div>
+          <div class="mb-3"><label class="form-label" for="fPass">New password</label><input class="form-control" id="fPass" type="password" minlength="6" autocomplete="new-password" required><div class="form-text">At least 6 characters.</div></div>
+          <button class="btn btn-brand w-100 py-2">Set new password</button>
+        </form>
+        <div class="text-center mt-2"><button type="button" class="btn btn-link btn-sm" data-go="#loginPane">Log in</button></div>
+      </div>
+    </div>
     </div>
   </div></section>
 </div></div>
@@ -49,9 +73,40 @@
 <script>
 const u0 = App.user(); if (u0) location.replace(App.home(u0));
 const msg = document.getElementById('msg');
-const fail = e => { msg.textContent = e.message; msg.classList.remove('d-none'); };
+const fail = e => { msg.className = 'alert alert-danger'; msg.textContent = e.message; };
 const go = u => { App.setUser(u); location.href = App.home(u); };
-document.getElementById('loginForm').onsubmit = ev => { ev.preventDefault(); try { go(Store.login(lEmail.value, lPass.value)); } catch (e) { fail(e); } };
-document.getElementById('regForm').onsubmit = ev => { ev.preventDefault(); try { go(Store.register(rName.value, rEmail.value, rPass.value)); } catch (e) { fail(e); } };
-document.querySelectorAll('[data-fill]').forEach(b => b.onclick = () => { const a = b.dataset.fill === 'admin'; lEmail.value = a ? 'admin@eticket.test' : 'attendee@eticket.test'; lPass.value = a ? 'admin123' : 'attendee123'; });
+/* Run an async action while its submit button is disabled (prevents double submits). */
+const busy = async (form, action) => {
+  const btn = form.querySelector('button:not([type=button])'); btn.disabled = true; msg.classList.add('d-none');
+  try { go(await action()); } catch (e) { fail(e); btn.disabled = false; }
+};
+document.getElementById('loginForm').onsubmit = ev => { ev.preventDefault(); busy(ev.target, () => Store.login(lEmail.value, lPass.value)); };
+document.getElementById('regForm').onsubmit = ev => { ev.preventDefault(); busy(ev.target, () => Store.register(rName.value, rEmail.value, rPass.value)); };
+/* Switch panes through the nav pills (Bootstrap only switches tabs from controls inside the .nav). */
+const showPane = sel => bootstrap.Tab.getOrCreateInstance(document.querySelector(`[data-bs-target="${sel}"]`)).show();
+/* Any pane change clears the previous message. */
+document.addEventListener("show.bs.tab", () => msg.classList.add("d-none"));
+document.querySelectorAll("[data-go]").forEach(b => b.onclick = () => showPane(b.dataset.go));
+document.getElementById("forgotLink").addEventListener("click", () => { fEmail.value = lEmail.value; });
+const done = (form, email) => { lEmail.value = email; lPass.value = ""; form.reset(); showPane("#loginPane");
+  msg.className = "alert alert-success"; msg.textContent = "Password changed. Log in with your new password."; };
+/* Reset password tab: confirm the old password, then set the new one. */
+document.getElementById("resetForm").onsubmit = async ev => {
+  ev.preventDefault();
+  const btn = ev.target.querySelector("button:not([type=button])"); btn.disabled = true; msg.classList.add("d-none");
+  try {
+    const email = xEmail.value;
+    try { await Store.login(email, xOld.value); } catch (e) { throw new Error("Email or old password is incorrect."); }
+    await Store.changePassword(xOld.value, xPass.value);
+    await Store.logout();
+    done(ev.target, email);
+  } catch (e) { fail(e); } finally { btn.disabled = false; }
+};
+/* Forgot password: administrator-issued one-time code. */
+document.getElementById("forgotForm").onsubmit = async ev => {
+  ev.preventDefault();
+  const btn = ev.target.querySelector("button:not([type=button])"); btn.disabled = true; msg.classList.add("d-none");
+  try { const email = fEmail.value; await Store.resetPassword(email, fCode.value, fPass.value); done(ev.target, email); }
+  catch (e) { fail(e); } finally { btn.disabled = false; }
+};
 </script></body></html>

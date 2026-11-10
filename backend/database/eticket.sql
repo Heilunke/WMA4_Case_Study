@@ -55,7 +55,7 @@ CREATE TABLE `attendee_details` (
 
 LOCK TABLES `attendee_details` WRITE;
 /*!40000 ALTER TABLE `attendee_details` DISABLE KEYS */;
-INSERT INTO `attendee_details` VALUES (1,1,'Maria Santos','0917 000 8237','TKT-001-1-T79ZFZ8R',1,'2026-11-10 11:34:28',1),(2,1,'Carlo Santos','0917 000 2536','TKT-001-2-UVZPGSKA',0,NULL,NULL),(3,2,'Juan Dela Cruz','0917 000 4042','TKT-002-1-LP3ZDBCU',0,NULL,NULL),(4,2,'Liza Dela Cruz','0917 000 2597','TKT-002-2-RWZ7UYFV',0,NULL,NULL),(5,2,'Marco Dela Cruz','0917 000 4058','TKT-002-3-7ZBULDSW',0,NULL,NULL),(6,3,'Ana Reyes','0917 000 6674',NULL,0,NULL,NULL),(7,4,'Maria Santos','0917 000 1584',NULL,0,NULL,NULL),(8,5,'Juan Dela Cruz','0917 000 7005',NULL,0,NULL,NULL);
+INSERT INTO `attendee_details` VALUES (1,1,'Maria Santos','0917 000 8237','TKT-001-1-T79ZFZ8R',1,'2026-11-10 11:34:28',1),(3,2,'Juan Dela Cruz','0917 000 4042','TKT-002-1-LP3ZDBCU',0,NULL,NULL),(6,3,'Ana Reyes','0917 000 6674',NULL,0,NULL,NULL),(7,4,'Maria Santos','0917 000 1584',NULL,0,NULL,NULL),(8,5,'Juan Dela Cruz','0917 000 7005',NULL,0,NULL,NULL);
 /*!40000 ALTER TABLE `attendee_details` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -148,7 +148,7 @@ CREATE TABLE `payments` (
 
 LOCK TABLES `payments` WRITE;
 /*!40000 ALTER TABLE `payments` DISABLE KEYS */;
-INSERT INTO `payments` VALUES (1,1,500.00,'Cash','paid','2026-11-10 11:34:28',1),(2,2,0.00,'Cash','paid','2026-11-10 11:34:28',1),(3,3,250.00,'Pay at venue (cash)','unpaid',NULL,NULL),(4,4,0.00,'Free','paid','2026-11-10 11:34:28',NULL),(5,5,250.00,'Pay at venue (cash)','unpaid',NULL,NULL);
+INSERT INTO `payments` VALUES (1,1,250.00,'Cash','paid','2026-11-10 11:34:28',1),(2,2,0.00,'Cash','paid','2026-11-10 11:34:28',1),(3,3,250.00,'Pay at venue (cash)','unpaid',NULL,NULL),(4,4,0.00,'Free','paid','2026-11-10 11:34:28',NULL),(5,5,250.00,'Pay at venue (cash)','unpaid',NULL,NULL);
 /*!40000 ALTER TABLE `payments` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -183,7 +183,7 @@ CREATE TABLE `reservations` (
 
 LOCK TABLES `reservations` WRITE;
 /*!40000 ALTER TABLE `reservations` DISABLE KEYS */;
-INSERT INTO `reservations` VALUES (1,2,2,2,500.00,'confirmed','2026-11-10 11:34:28'),(2,3,1,3,0.00,'confirmed','2026-11-10 11:34:28'),(3,4,2,1,250.00,'pending','2026-11-10 11:34:28'),(4,2,1,1,0.00,'pending','2026-11-10 11:34:28'),(5,3,2,1,250.00,'cancelled','2026-11-10 11:34:28');
+INSERT INTO `reservations` VALUES (1,2,2,1,250.00,'confirmed','2026-11-10 11:34:28'),(2,3,1,1,0.00,'confirmed','2026-11-10 11:34:28'),(3,4,2,1,250.00,'pending','2026-11-10 11:34:28'),(4,2,1,1,0.00,'pending','2026-11-10 11:34:28'),(5,3,2,1,250.00,'cancelled','2026-11-10 11:34:28');
 /*!40000 ALTER TABLE `reservations` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -214,7 +214,7 @@ CREATE TABLE `ticket_types` (
 
 LOCK TABLES `ticket_types` WRITE;
 /*!40000 ALTER TABLE `ticket_types` DISABLE KEYS */;
-INSERT INTO `ticket_types` VALUES (1,1,'Regular',0.00,46,4),(2,2,'Regular',250.00,297,3),(3,2,'VIP',750.00,40,0),(4,3,'General Admission',150.00,200,0),(5,3,'VIP',400.00,30,0),(6,4,'Regular',100.00,30,0);
+INSERT INTO `ticket_types` VALUES (1,1,'Regular',0.00,48,2),(2,2,'Regular',250.00,298,2),(3,2,'VIP',750.00,40,0),(4,3,'General Admission',150.00,200,0),(5,3,'VIP',400.00,30,0),(6,4,'Regular',100.00,30,0);
 /*!40000 ALTER TABLE `ticket_types` ENABLE KEYS */;
 UNLOCK TABLES;
 

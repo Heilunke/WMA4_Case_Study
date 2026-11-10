@@ -22,6 +22,10 @@ use Illuminate\Support\Facades\DB;
  * meaning quantity_available goes down as soon as the attendee submits. Cancelling gives the seats back.
  * Every time we change the seats we use DB::transaction() and lockForUpdate() on the ticket type row
  * (SELECT ... FOR UPDATE). This way two people can't buy the same last ticket at the same time.
+ *
+ * Ticket rule: one ticket per account for each event. A reservation is always exactly one ticket, and an
+ * account with a Pending or Confirmed reservation for an event can't reserve that event again (a Cancelled
+ * one doesn't count). The check runs under a lock on the user's row, so a double-click can't slip through.
  */
 class ReservationService
 {
@@ -31,18 +35,34 @@ class ReservationService
     public function reserve(int $userId, array $in): int
     {
         $ticketId = Validator::int($in['ticket_ID'] ?? null, 'Ticket type', 1, PHP_INT_MAX);
-        $qty = Validator::int($in['quantity'] ?? null, 'Quantity', 1, config('eticket.max_per_reservation'));
+        // One ticket per account for each event: a reservation is always exactly one ticket.
+        $qty = (int) ($in['quantity'] ?? 1);
+        if ($qty !== 1) {
+            throw ApiException::validation('Only one ticket can be reserved per account for each event.');
+        }
         $method = Validator::string($in['payment_method'] ?? null, 'Payment method', 1, 100);
         $attendees = $this->validateAttendees($in['attendees'] ?? null, $qty);
 
         return DB::transaction(function () use ($userId, $ticketId, $qty, $method, $attendees) {
-            // Lock the ticket type row first. If two people reserve at the same time, the second one waits here.
+            // Lock the user's row first so one account's reservations queue up here and a double-click
+            // can't get past the one-ticket check below. (Nothing locks a user row after a ticket type.)
+            User::lockForUpdate()->find($userId);
+            // Lock the ticket type row. If two people reserve at the same time, the second one waits here.
             $ticket = TicketType::lockForUpdate()->find($ticketId) ?? throw ApiException::notFound('Ticket type not found.');
             $event = $ticket->event;
 
             $starts = new DateTimeImmutable($event->event_date . ' ' . $event->event_time, new DateTimeZone(config('eticket.event_tz')));
             if ($starts <= new DateTimeImmutable('now')) {
                 throw ApiException::conflict('This event has already started, so it can no longer be reserved.', 'event_closed');
+            }
+
+            // One ticket per account for each event. A cancelled reservation doesn't count.
+            $already = Reservation::where('user_ID', $userId)
+                ->whereIn('reservation_status', ['pending', 'confirmed'])
+                ->whereHas('ticketType', fn ($q) => $q->where('event_ID', $ticket->event_ID))
+                ->exists();
+            if ($already) {
+                throw ApiException::conflict('You already have a ticket for this event.', 'already_reserved');
             }
 
             $left = (int) $ticket->quantity_available;
