@@ -30,7 +30,7 @@ function check(name, cond, extra = '') {
 const eq = (name, got, want) => check(name, JSON.stringify(got) === JSON.stringify(want), `got ${JSON.stringify(got)}, want ${JSON.stringify(want)}`);
 const section = t => console.log('\n' + t);
 
-const anon = new Client(), admin = new Client(), maria = new Client(), juan = new Client();
+const anon = new Client(), admin = new Client(), maria = new Client(), juan = new Client(), ana = new Client();
 const day = n => { const d = new Date(Date.now() + n * 864e5); return d.toISOString().slice(0, 10); };
 
 section('Authentication');
@@ -42,6 +42,7 @@ eq('admin login -> role admin', r.json.user.role, 'admin');
 check('login response has no password hash', !JSON.stringify(r.json).includes('password'));
 await maria.login('attendee@eticket.test', 'attendee123');
 await juan.login('juan@eticket.test', 'attendee123');
+await ana.login('ana@eticket.test', 'attendee123');
 
 section('Registration is attendee-only');
 const evil = new Client();
@@ -57,7 +58,7 @@ const adm = (await admin.call('GET', '/bootstrap')).json, mar = (await maria.cal
 check('admin sees all reservations', adm.reservations.length === 5, adm.reservations.length);
 check('admin gets users + report', adm.users.length >= 4 && !!adm.report);
 check('attendee sees only own reservations', mar.reservations.length === 2 && mar.reservations.every(x => x.user_ID === mar.user.user_ID), mar.reservations.length);
-check('attendee sees only own attendees/payments', mar.attendee_details.length === 3 && mar.payments.length === 2);
+check('attendee sees only own attendees/payments', mar.attendee_details.length === 2 && mar.payments.length === 2);
 check('attendee sees only own user row, no report', mar.users.length === 1 && !mar.report);
 check('attendee still sees the full event catalogue', mar.events.length === 4 && mar.ticket_types.length === 6);
 eq('attendee cannot list users', (await maria.call('GET', '/users')).status, 403);
@@ -82,30 +83,37 @@ section('Inventory: pending holds seats');
 let snap = (await admin.call('GET', '/bootstrap')).json;
 let t = snap.ticket_types.find(x => x.ticket_ID === wsTicket.ticket_ID);
 eq('available 29 / sold 1 after reserving', [t.quantity_available, t.quantity_sold], [29, 1]);
-r = await maria.call('POST', '/reservations', payload(wsTicket, 30, Array(30).fill('X')));
-eq('quantity above the 10-per-reservation limit -> 422', r.status, 422);
-// drain the workshop: 29 left. 3 x 10 is too many for 29, so use 10 + 10 + 9.
-for (const n of [10, 10, 9]) eq(`reserve ${n}`, (await juan.call('POST', '/reservations', payload(wsTicket, n, Array(n).fill('Guest')))).status, 201);
-r = await maria.call('POST', '/reservations', payload(wsTicket, 1, ['Late']));
-eq('sold out -> 409 sold_out', [r.status, r.json.error.code], [409, 'sold_out']);
+r = await maria.call('POST', '/reservations', payload(wsTicket, 1, ['Maria again']));
+eq('one ticket per account per event -> 409 already_reserved', [r.status, r.json.error.code], [409, 'already_reserved']);
+eq('more than one ticket in a reservation -> 422', (await juan.call('POST', '/reservations', payload(wsTicket, 2, ['A', 'B']))).status, 422);
+eq('attendee names must match the one ticket -> 422', (await juan.call('POST', '/reservations', payload(wsTicket, 1, ['Juan', 'Extra']))).status, 422);
+r = await juan.call('POST', '/reservations', payload(wsTicket, 1, ['Juan Dela Cruz']));
+eq('another account can reserve the same event', r.status, 201);
+const juanWs = r.json.reservation;
+eq('third account reserves too', (await ana.call('POST', '/reservations', payload(wsTicket, 1, ['Ana Reyes']))).status, 201);
 snap = (await admin.call('GET', '/bootstrap')).json;
 t = snap.ticket_types.find(x => x.ticket_ID === wsTicket.ticket_ID);
-eq('workshop available 0 / sold 30', [t.quantity_available, t.quantity_sold], [0, 30]);
-const juanRes = snap.reservations.filter(x => x.ticket_ID === wsTicket.ticket_ID && x.user_ID !== wsRes.user_ID);
-r = await maria.call('POST', '/reservations', payload(wsTicket, 2, ['Only one name']));
-eq('attendee names must match quantity -> 422', r.status, 422);
+eq('workshop available 27 / sold 3', [t.quantity_available, t.quantity_sold], [27, 3]);
+// sold out: a one-seat event
+r = await admin.call('POST', '/events', { event_name: 'One Seat Talk', category: 'Seminar', event_date: day(6), event_time: '10:00', venue: 'Room 1', ticket_types: [{ type_name: 'Regular', price: 0, total: 1 }] });
+const oneSeatId = r.json.event_ID;
+const oneSeatT = (await admin.call('GET', '/bootstrap')).json.ticket_types.find(x => x.event_ID === oneSeatId);
+eq('last seat reserved', (await juan.call('POST', '/reservations', payload(oneSeatT, 1, ['Juan Dela Cruz']))).status, 201);
+r = await maria.call('POST', '/reservations', payload(oneSeatT, 1, ['Maria Santos']));
+eq('sold out -> 409 sold_out', [r.status, r.json.error.code], [409, 'sold_out']);
 
 section('Cancel rules and seat release');
-eq("attendee cannot cancel someone else's reservation (404)", (await maria.call('POST', `/reservations/${juanRes[0].reservation_ID}/cancel`)).status, 404);
-r = await juan.call('POST', `/reservations/${juanRes[0].reservation_ID}/cancel`);
+eq("attendee cannot cancel someone else's reservation (404)", (await maria.call('POST', `/reservations/${juanWs.reservation_ID}/cancel`)).status, 404);
+r = await juan.call('POST', `/reservations/${juanWs.reservation_ID}/cancel`);
 eq('attendee cancels own pending -> cancelled', r.json.reservation.reservation_status, 'cancelled');
 snap = (await admin.call('GET', '/bootstrap')).json;
 t = snap.ticket_types.find(x => x.ticket_ID === wsTicket.ticket_ID);
-eq('10 seats released (available 10 / sold 20)', [t.quantity_available, t.quantity_sold], [10, 20]);
-eq('cancel is idempotent', (await juan.call('POST', `/reservations/${juanRes[0].reservation_ID}/cancel`)).status, 200);
+eq('1 seat released (available 28 / sold 2)', [t.quantity_available, t.quantity_sold], [28, 2]);
+eq('cancel is idempotent', (await juan.call('POST', `/reservations/${juanWs.reservation_ID}/cancel`)).status, 200);
 snap = (await admin.call('GET', '/bootstrap')).json;
 t = snap.ticket_types.find(x => x.ticket_ID === wsTicket.ticket_ID);
-eq('second cancel did not release twice', [t.quantity_available, t.quantity_sold], [10, 20]);
+eq('second cancel did not release twice', [t.quantity_available, t.quantity_sold], [28, 2]);
+eq('after cancelling, the account can reserve the event again', (await juan.call('POST', '/reservations', payload(wsTicket, 1, ['Juan Dela Cruz']))).status, 201);
 
 section('Confirm issues e-tickets');
 eq('attendee cannot confirm (RBAC)', (await maria.call('POST', `/reservations/${wsRes.reservation_ID}/confirm`)).status, 403);
@@ -120,13 +128,13 @@ eq('another attendee cannot read it (404)', (await juan.call('GET', `/reservatio
 eq('attendee cannot cancel a confirmed reservation (403)', (await maria.call('POST', `/reservations/${wsRes.reservation_ID}/cancel`)).status, 403);
 const code2 = (await admin.call('POST', `/reservations/${wsRes.reservation_ID}/confirm`)).json.attendees[0].ticket_code;
 eq('confirm is idempotent (code unchanged)', code2, code);
-eq('cancelled reservation cannot be confirmed -> 409', (await admin.call('POST', `/reservations/${juanRes[0].reservation_ID}/confirm`)).status, 409);
+eq('cancelled reservation cannot be confirmed -> 409', (await admin.call('POST', `/reservations/${juanWs.reservation_ID}/confirm`)).status, 409);
 
 section('Payment (recorded, no gateway)');
 r = await admin.call('POST', `/reservations/${wsRes.reservation_ID}/payment`, { payment_method: 'GCash' });
 eq('admin marks paid', [r.json.payment.payment_status, r.json.payment.payment_method], ['paid', 'GCash']);
 eq('attendee cannot mark paid (403)', (await maria.call('POST', `/reservations/${wsRes.reservation_ID}/payment`, { payment_method: 'Cash' })).status, 403);
-eq('cannot record payment on a cancelled reservation -> 409', (await admin.call('POST', `/reservations/${juanRes[0].reservation_ID}/payment`, { payment_method: 'Cash' })).status, 409);
+eq('cannot record payment on a cancelled reservation -> 409', (await admin.call('POST', `/reservations/${juanWs.reservation_ID}/payment`, { payment_method: 'Cash' })).status, 409);
 
 section('Check-in');
 eq('attendee cannot check in (403)', (await maria.call('POST', '/checkin', { ticket_code: code })).status, 403);
@@ -162,23 +170,23 @@ eq('event stored with time trimmed to HH:MM', created.event_time, '19:30');
 check('HTML in names is stored as plain text (front end escapes on render)', created.event_name.startsWith('<script>'));
 const newTicket = snap.ticket_types.find(x => x.event_ID === newId);
 eq('ticket type price/capacity', [newTicket.price, newTicket.quantity_available, newTicket.quantity_sold], [99.5, 5, 0]);
-r = await maria.call('POST', '/reservations', payload(newTicket, 3, ['A', 'B', 'C']));
-eq('reserve 3 of 5', r.status, 201);
-r = await admin.call('PUT', '/events/' + newId, { ...created, ticket_types: [{ ticket_ID: newTicket.ticket_ID, type_name: 'GA', price: 99.5, total: 2 }] });
+eq('reserve 1 of 5', (await maria.call('POST', '/reservations', payload(newTicket, 1, ['A']))).status, 201);
+eq('reserve 2 of 5', (await juan.call('POST', '/reservations', payload(newTicket, 1, ['B']))).status, 201);
+r = await admin.call('PUT', '/events/' + newId, { ...created, ticket_types: [{ ticket_ID: newTicket.ticket_ID, type_name: 'GA', price: 99.5, total: 1 }] });
 eq('capacity below reserved seats -> 409', r.status, 409);
 r = await admin.call('PUT', '/events/' + newId, { ...created, venue: 'Bigger Hall', ticket_types: [{ ticket_ID: newTicket.ticket_ID, type_name: 'General', price: 120, total: 10 }] });
 eq('edit event + raise capacity', r.status, 200);
 snap = (await admin.call('GET', '/bootstrap')).json;
 const edited = snap.ticket_types.find(x => x.ticket_ID === newTicket.ticket_ID);
-eq('available recomputed = capacity - held (10 - 3)', [edited.type_name, edited.price, edited.quantity_available, edited.quantity_sold], ['General', 120, 7, 3]);
+eq('available recomputed = capacity - held (10 - 2)', [edited.type_name, edited.price, edited.quantity_available, edited.quantity_sold], ['General', 120, 8, 2]);
 r = await admin.call('PUT', '/events/' + newId, { ...created, ticket_types: [{ type_name: 'VIP', price: 5, total: 5 }] });
 eq('cannot drop a ticket type that has reservations -> 409', r.status, 409);
 eq('cannot delete an event with active reservations -> 409', (await admin.call('DELETE', '/events/' + newId)).status, 409);
-const newRes = snap.reservations.find(x => x.ticket_ID === newTicket.ticket_ID);
-await maria.call('POST', `/reservations/${newRes.reservation_ID}/cancel`);
+const newRes = snap.reservations.filter(x => x.ticket_ID === newTicket.ticket_ID);
+for (const x of newRes) await admin.call('POST', `/reservations/${x.reservation_ID}/cancel`);
 eq('delete event once its reservations are cancelled -> 204', (await admin.call('DELETE', '/events/' + newId)).status, 204);
 snap = (await admin.call('GET', '/bootstrap')).json;
-check('event, ticket types and reservation are gone', !snap.events.some(e => e.event_ID === newId) && !snap.ticket_types.some(x => x.event_ID === newId) && !snap.reservations.some(x => x.reservation_ID === newRes.reservation_ID));
+check('event, ticket types and reservation are gone', !snap.events.some(e => e.event_ID === newId) && !snap.ticket_types.some(x => x.event_ID === newId) && !snap.reservations.some(x => newRes.some(n => n.reservation_ID === x.reservation_ID)));
 eq('attendee cannot delete events (403)', (await maria.call('DELETE', '/events/1')).status, 403);
 eq('unknown event -> 404', (await admin.call('DELETE', '/events/99999')).status, 404);
 
@@ -191,7 +199,7 @@ eq('reserving a past event -> 409 event_closed', [r.status, r.json.error.code], 
 
 section('Free events are auto-paid');
 const freeT = snap.ticket_types.find(x => x.event_ID === funEvent.event_ID);
-r = await maria.call('POST', '/reservations', payload(freeT, 1, ['Maria']));
+r = await ana.call('POST', '/reservations', payload(freeT, 1, ['Ana Reyes']));
 eq('free reservation: amount 0, payment paid, method Free', [r.json.payment.amount, r.json.payment.payment_status, r.json.payment.payment_method], [0, 'paid', 'Free']);
 
 section('Users and roles');
@@ -243,7 +251,7 @@ section('Reports');
 r = (await admin.call('GET', '/reports')).json;
 eq('status totals add up', r.totals.reservations, r.byStatus.confirmed + r.byStatus.pending + r.byStatus.cancelled);
 const wsRow = r.perEvent.find(p => p.event.event_ID === ws.event_ID);
-eq('workshop row: capacity 30, reserved 20, confirmed 1, revenue 100', [wsRow.capacity, wsRow.reserved, wsRow.confirmed, wsRow.revenue], [30, 20, 1, 100]);
+eq('workshop row: capacity 30, reserved 3, confirmed 1, revenue 100', [wsRow.capacity, wsRow.reserved, wsRow.confirmed, wsRow.revenue], [30, 3, 1, 100]);
 
 section('REST: lists, details and filters');
 r = await maria.call('GET', '/events');

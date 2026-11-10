@@ -104,7 +104,7 @@ MySQL → JSON back to the page.
 | 3 | Public registration = Attendee only | `UserService::register()` hard-codes `role = 'attendee'`; a `role` field in the request is ignored. Only an Administrator can promote (`PUT /api/users/{id}/role`); the last Administrator cannot be demoted. |
 | 4 | Payment scope | **No online gateway.** `payments` is a record: starts `unpaid` (free events: `paid`); an Administrator records it (`POST /api/reservations/{id}/payment`, stored with `recorded_by`). |
 | 5 | Inventory logic | **Pending and Confirmed hold seats; Cancelled releases them.** `quantity_available` = remaining, `quantity_sold` = held. Every change runs in `DB::transaction()` after `lockForUpdate()` on the ticket-type row, so concurrent bookings cannot oversell. Pending reservations still **unpaid** after `RESERVATION_HOLD_HOURS` (48) are cancelled automatically. |
-| 6 | Attendee details vs multiple tickets | Exactly one `attendee_details` row per ticket; a reservation whose attendee list does not match `quantity` is rejected. |
+| 6 | Attendee details vs multiple tickets | **One ticket per account per event.** A reservation is always one ticket (`quantity = 1`), so it has exactly one `attendee_details` row and one e-ticket. An account with a Pending or Confirmed reservation for an event cannot reserve it again (`already_reserved`, 409); cancelling frees the seat and the account may reserve again. |
 | 7 | Check-in not a module | `POST /api/checkin` validates a code: `invalid` / `wrong_event` / `not_confirmed` / `already_used`, otherwise admits the attendee (`checked_in_at`, `checked_in_by`). A reservation with a checked-in attendee cannot be cancelled; `undo-checkin` reverses a mistake. |
 
 ## Changes to the proposal's data dictionary (Table 4)
@@ -113,7 +113,7 @@ MySQL → JSON back to the page.
 |---|---|
 | `events` | **+** `category VARCHAR(50)`, `description TEXT`, `created_at DATETIME` |
 | `ticket_types` | `UNIQUE (event_ID, type_name)`; counters are `UNSIGNED` so they can never go negative; `CHECK (price >= 0)` |
-| `reservations` | `CHECK (quantity BETWEEN 1 AND 10)` |
+| `reservations` | `CHECK (quantity = 1)` (one ticket per account per event) |
 | `attendee_details` | **+** `ticket_code VARCHAR(30) UNIQUE NULL`, `checked_in_at DATETIME`, `checked_in_by` (FK → users) |
 | `payments` | **+** `recorded_by` (FK → users); `payment_method` `VARCHAR(100)`; `UNIQUE (reservation_ID)` makes it one-to-one |
 | `users` | **+** `session_version` (bumped on a password change to log out other sessions), `reset_code_hash`, `reset_expires_at` |

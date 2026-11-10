@@ -173,7 +173,7 @@ CREATE TABLE `reservations` (
   KEY `idx_res_status` (`reservation_status`),
   CONSTRAINT `fk_res_ticket` FOREIGN KEY (`ticket_ID`) REFERENCES `ticket_types` (`ticket_ID`),
   CONSTRAINT `fk_res_user` FOREIGN KEY (`user_ID`) REFERENCES `users` (`user_ID`),
-  CONSTRAINT `chk_res_qty` CHECK (`quantity` between 1 and 10)
+  CONSTRAINT `chk_res_qty` CHECK (`quantity` = 1)
 ) ENGINE=InnoDB AUTO_INCREMENT=6 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 

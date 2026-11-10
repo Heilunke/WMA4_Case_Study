@@ -25,7 +25,7 @@ return new class extends Migration
             $table->foreign('user_ID', 'fk_res_user')->references('user_ID')->on('users');
             $table->foreign('ticket_ID', 'fk_res_ticket')->references('ticket_ID')->on('ticket_types');
         });
-        DB::statement('ALTER TABLE reservations ADD CONSTRAINT chk_res_qty CHECK (quantity BETWEEN 1 AND 10)');
+        DB::statement('ALTER TABLE reservations ADD CONSTRAINT chk_res_qty CHECK (quantity = 1)');
     }
 
     public function down(): void
