@@ -12,5 +12,5 @@ return [
     'login_max_per_ip'        => (int) env('LOGIN_MAX_PER_IP', 50),
     // How long an Administrator-issued reset code stays valid.
     'password_reset_minutes'  => (int) env('PASSWORD_RESET_MINUTES', 30),
-    'max_per_reservation'     => 10,
+    // Ticket rule: one ticket per account for each event (enforced in ReservationService::reserve()).
 ];

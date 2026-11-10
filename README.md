@@ -1,40 +1,20 @@
 # E-Ticket — Web-Based Event Reservation and Ticket Management System
 
-WMA4 · Tarlac State University, College of Computer Studies · Group 2
+WMA4 · Advanced Web Development · Tarlac State University, College of Computer Studies · Group 2
 
-E-Ticket lets attendees browse events, reserve tickets (one e-ticket with a QR code per attendee) and
-lets administrators confirm reservations, record payments, validate tickets at the door and view reports.
-
-## Repository structure
-
-| Folder | Contents |
-| ------ | -------- |
-| [`frontend/`](frontend) | Bootstrap 5 + JavaScript UI (login, attendee and admin screens). See its [README](frontend/README.md). |
-| [`backend/`](backend) | Laravel 12 REST API + MySQL (models, migrations, seeders). See its [README](backend/README.md). |
+| Folder | What it is |
+|---|---|
+| [`frontend/`](frontend/README.md) | Browser UI (HTML/CSS/JS, Bootstrap) |
+| [`backend/`](backend/README.md) | Laravel 12 REST API + MySQL: Eloquent models, migrations, seeders, API tests, Postman |
+| `context/` | Proposal and the panel's comments |
 
 ## Quick start
-
+Needs PHP 8.2+, Composer and MySQL/MariaDB (XAMPP). Create a database named `eticket` first.
 ```bash
 cd backend
-composer install
-cp .env.example .env
-php artisan key:generate
-# create the "eticket" database, then:
-php artisan migrate:fresh --seed
-
+composer install && cp .env.example .env && php artisan key:generate   # first time only
+php artisan migrate:fresh --seed                                       # tables + demo data
 cd ..
 php -S localhost:8000 -t frontend backend/router.php
 ```
-
-Open <http://localhost:8000>. Full setup details are in [`backend/README.md`](backend/README.md).
-
-## Demo accounts (development only)
-
-| Role          | Email                 | Password    |
-| ------------- | --------------------- | ----------- |
-| Administrator | admin@eticket.test    | admin123    |
-| Attendee      | attendee@eticket.test | attendee123 |
-
-## Branching
-
-`main` holds the combined project. Work on a feature branch and open a pull request into `main`.
+Open <http://localhost:8000> — Administrator `admin@eticket.test` / `admin123`, Attendee `attendee@eticket.test` / `attendee123`.

@@ -55,8 +55,8 @@ class DatabaseSeeder extends Seeder
             return $rid;
         };
 
-        $r1 = $book($maria, $summit, ['Maria Santos', 'Carlo Santos'], true, true);
-        $book($juan, $fun, ['Juan Dela Cruz', 'Liza Dela Cruz', 'Marco Dela Cruz'], true, true);
+        $r1 = $book($maria, $summit, ['Maria Santos'], true, true);
+        $book($juan, $fun, ['Juan Dela Cruz'], true, true);
         $book($ana, $summit, ['Ana Reyes'], false, false);
         $book($maria, $fun, ['Maria Santos'], false, false);
         $r5 = $book($juan, $summit, ['Juan Dela Cruz'], false, false);
