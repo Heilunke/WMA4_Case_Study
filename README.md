@@ -18,3 +18,5 @@ cd ..
 php -S localhost:8000 -t frontend backend/router.php
 ```
 Open <http://localhost:8000> — Administrator `admin@eticket.test` / `admin123`, Attendee `attendee@eticket.test` / `attendee123`.
+
+**Database file:** `backend/database/eticket.sql` (full schema + demo data). To use it instead of the migrations, create an empty database named `eticket` in phpMyAdmin, choose **Import**, and select that file.
