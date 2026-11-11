@@ -48,7 +48,7 @@ To reset the sample data, run `php backend/artisan migrate:fresh --seed` again.
 | 1 | E-ticket underdeveloped | Confirming a reservation issues one **unique ticket code + QR per attendee** (`attendee/ticket.html`, printable). |
 | 2 | Admin vs Organizer wording | Single role named **Administrator** everywhere. |
 | 3 | Public registration = Attendee only | The API forces `role = attendee` on sign-up; only an Administrator can promote users (`admin/users.html`). |
-| 4 | Payment scope | **No online gateway.** The attendee picks pay-at-venue or transfer; the Administrator *records* payment (`Mark as paid`). Free events are auto-marked paid. |
+| 4 | Payment scope | **No online gateway.** Payment is cash at the venue; the Administrator *records* payment (`Mark as paid`). Free events are auto-marked paid. |
 | 5 | Inventory logic | **Pending and Confirmed hold seats**; **Cancelled releases** them. Reservations with a checked-in attendee cannot be cancelled. |
 | 6 | Attendee details vs multiple tickets | The reserve form has **one attendee row per ticket**, and `attendee_details` has one row per ticket. |
 | 7 | Check-in not designed | `admin/checkin.html`: validate by code/QR scanner; rejects invalid, voided, wrong-event, unconfirmed and already-used tickets; shows live progress; undo. |

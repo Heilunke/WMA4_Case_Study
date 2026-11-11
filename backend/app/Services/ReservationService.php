@@ -229,7 +229,7 @@ class ReservationService
         return $expired;
     }
 
-    /** The admin records that the payment was received (cash, bank transfer, GCash, etc.). */
+    /** The admin records that the payment was received (cash at the venue). */
     public function markPaid(int $reservationId, mixed $method, int $adminId): void
     {
         $method = Validator::string($method ?? 'Cash', 'Payment method', 1, 100);

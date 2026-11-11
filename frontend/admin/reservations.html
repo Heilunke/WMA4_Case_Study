@@ -46,8 +46,8 @@ const v = await App.shell('admin', 'reservations'); if (v) {
       if (yes) act(() => Store.cancel(id), 'Reservation cancelled; seats released.', id);
     });
     on('paidBtn', async () => {
-      const m = await App.choose({ title: 'Record payment', message: `${r.code} · ${App.peso(r.total_amount)} from ${r.user.full_Name}`, label: 'Payment method received', options: ['Cash', 'GCash', 'Maya', 'Bank transfer'], value: 'Cash', ok: 'Mark as paid' });
-      if (m) act(() => Store.markPaid(id, m), 'Payment recorded.', id);
+      const yes = await App.confirm({ title: 'Record payment?', message: `${r.code} · ${App.peso(r.total_amount)} in cash from ${r.user.full_Name}`, ok: 'Mark as paid', cancel: 'Not yet' });
+      if (yes) act(() => Store.markPaid(id, 'Cash'), 'Payment recorded.', id);
     });
     modal.show();
   };

@@ -40,8 +40,8 @@ const v = await App.shell('attendee', 'events'); if (v) {
             <div class="col-md-7"><label class="form-label small mb-1" for="an">Full name</label><input id="an" class="form-control" required value="${App.esc(u.full_Name)}"></div>
             <div class="col-md-5"><label class="form-label small mb-1" for="ac">Contact number</label><input id="ac" class="form-control" inputmode="tel" placeholder="09XX XXX XXXX"></div></div></div></div>
         <div class="card p-3"><h2 class="h6 text-uppercase text-muted-2">3 · Payment</h2>
-          <p class="small mb-2">No online payment is processed in this system. Choose how you will pay; an Administrator records your payment and confirms the reservation.</p>
-          <select id="method" class="form-select" style="max-width:320px" aria-label="Payment method"><option>Pay at venue (cash)</option><option>Bank / e-wallet transfer (reference sent to organizer)</option></select></div>
+          <p class="small mb-0">Payment is made in cash at the venue. There is no online payment in this system. An Administrator records your payment and confirms the reservation.</p>
+          <input type="hidden" id="method" value="Cash"></div>
       </div>
       <div class="col-lg-4"><div class="card p-3 sticky-summary"><h2 class="h5">Summary</h2>
         <dl class="mb-3 small" id="sum"></dl>
